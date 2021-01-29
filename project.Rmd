@@ -1,0 +1,154 @@
+---
+title: "Jun Wei-project1"
+author: "Jun Wei-918978635"
+date: "2021/1/29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1.Data organization
+```{r}
+library(haven)
+stardata<-read_sav("STAR_Students.sav")
+star<-data.frame(schoolid=stardata$g1schid,teacherid=stardata$g1tchid,classtype=stardata$g1classtype,math=stardata$g1tmathss)
+star<-na.omit(star)
+mathscale<-aggregate(star$math,by=list(star$teacherid),mean)
+mathscale<-data.frame(teacherid=mathscale$Group.1, scale=mathscale$x)
+
+newdata<-merge(star, mathscale, by="teacherid", all = T)
+newdata<-newdata[,-4]
+newdata<-newdata[!duplicated(newdata), ]
+newdata$classtype<-as.factor(newdata$classtype)
+newdata$schoolid<-as.factor(newdata$schoolid)
+```
+
+2.Descriptive analysis
+```{r}
+#descriptive table
+N<-table(star$classtype)
+MIN<-tapply(star$math,star$classtype,min)
+MAX<-tapply(star$math,star$classtype,max)
+MEAN<-tapply(star$math,star$classtype,mean)
+MEDIAN<-tapply(star$math,star$classtype,median)
+SD<-tapply(star$math,star$classtype,sd)
+A<-rbind(MIN,MAX,MEAN,MEDIAN,SD)
+colnames(A)<-c("classtype=1,n=1867","classtype=2,n=2507","classtype=3,n=2224")
+A
+#descriptive plots
+library(gplots)
+library(ggplot2)
+ggplot(data=newdata)+
+   geom_boxplot(mapping=aes(x=classtype, y=scale))#classtype
+
+ggplot(data=newdata)+
+   geom_boxplot(mapping=aes(x=schoolid, y=scale))#schoolid
+
+
+```
+
+
+
+3.Inferential analysis
+```{r}
+#two-way anova
+anova.fit<-aov(scale~classtype+schoolid,data=newdata)
+summary(anova.fit)
+#two-way anova with interaction
+anova.fit1<-aov(scale~classtype*schoolid,data=newdata)
+summary(anova.fit1)
+#best-fit
+library(AICcmodavg)
+model.set <- list(anova.fit, anova.fit1)
+model.names <- c("anova.fit", "interaction")
+aictab(model.set, modnames = model.names)
+#tukey test
+tukey.test <- TukeyHSD(anova.fit,conf.level=0.95)
+TukeyHSD(anova.fit,conf.level=0.95,which=1)#classtype
+
+which.max(newdata$scale)
+newdata$schoolid[which.max(newdata$scale)]
+second<-newdata[-179,]
+newdata$schoolid[which.max(second$scale)]
+(contrast<-tukey.test$schoolid['216537-168214',])#schoolid
+
+plot(tukey.test, las=1 , col="brown")
+
+plotmeans(scale~classtype,data=newdata,xlab="classtype",ylab="scale", main="Main  effect, classtype") 
+plotmeans(scale~schoolid,data=newdata,xlab="schoolid",ylab="scale", main="Main  effect, schoolid")
+interaction.plot(newdata$classtype, newdata$schoolid, newdata$scale)
+
+```
+
+
+
+
+6.Sensitivity analysis
+```{r}
+#diagnose
+par(mfrow=c(2,2))
+plot(anova.fit)
+#equal variance-Levene test
+newdata$res.abs=abs(anova.fit$residuals);
+summary(aov(res.abs~classtype+schoolid,data=newdata))
+```
+
+7.Alternative methods(use mediam as sumary measure instead of mean)
+```{r}
+#Data organization
+mathscale1<-aggregate(star$math,by=list(star$teacherid),median)
+mathscale1<-data.frame(teacherid=mathscale1$Group.1, scale=mathscale1$x)
+newdata1<-merge(star, mathscale1, by="teacherid", all = T)
+newdata1<-newdata1[,-4]
+newdata1<-newdata1[!duplicated(newdata1), ]
+newdata1$classtype<-as.factor(newdata1$classtype)
+newdata1$schoolid<-as.factor(newdata1$schoolid)
+#Descriptive analysis
+ggplot(data=newdata1)+
+   geom_boxplot(mapping=aes(x=classtype, y=scale))#classtype
+
+
+ggplot(data=newdata1)+
+   geom_boxplot(mapping=aes(x=schoolid, y=scale))#schoolid
+
+plotmeans(scale~classtype,data=newdata1,xlab="classtype",ylab="scale", main="Main  effect, classtype") 
+plotmeans(scale~schoolid,data=newdata1,xlab="schoolid",ylab="scale", main="Main  effect, schoolid")
+interaction.plot(newdata1$classtype, newdata1$schoolid, newdata1$scale)
+
+#Inferential analysis
+anova.fit2<-aov(scale~classtype+schoolid,data=newdata1)
+summary(anova.fit2)#two-way anova
+
+anova.fit3<-aov(scale~classtype*schoolid,data=newdata1)
+summary(anova.fit3)#two-way anova with interaction
+
+library(AICcmodavg)
+model.set <- list(anova.fit2, anova.fit3)
+model.names <- c("anova.fit", "interaction")
+aictab(model.set, modnames = model.names)#best-fit
+
+
+tukey.test1 <- TukeyHSD(anova.fit2,conf.level=0.95)#tukey test
+TukeyHSD(anova.fit2,conf.level=0.95,which=1)#classtype
+
+which.max(newdata1$scale)
+newdata1$schoolid[which.max(newdata1$scale)]
+second1<-newdata1[-53,]
+newdata1$schoolid[which.max(second1$scale)]
+(contrast<-tukey.test1$schoolid['216537-168214',])#schoolid
+
+plot(tukey.test1, las=1 , col="brown")
+
+#Sensitivity analysis
+plot(anova.fit2)##diagnose
+newdata1$res.abs=abs(anova.fit2$residuals);
+summary(aov(res.abs~classtype+schoolid,data=newdata1))#equal variance
+
+```
+
+
+
+
+
