@@ -1,0 +1,274 @@
+---
+title: "Less but Better"
+subtitle: |
+  | An In-Depeth Analysis of Differences in Scores Across Class Size and School
+author: "Jun Wei-918978635"
+date: "01/29/2021"
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.pos = 'H')
+```
+
+
+# Abstract 
+
+This project aims to check whether there is any difference in math scores in 1st grade across class types and schools and then to find which class type or school is associated with the highest math scores in 1st grade based on the scaled math scores using the data set about the Tennesses Student/Teacher Achievement Ratio study collected from Harvard dataverse. This report includes several statistic analysis such as simple descriptive analysis, inferential analysis by ANOVA and sensitivity analysis. It shows that there are indeed certain differences in math scores across class types and the math score in class type 1 which means small class is the highest. However, it does not show any differences in math scores across different schools.
+
+# Introduction
+## Motivation of analysis
+
+With the development of economy and technology, people are more and more aware of the importance of education, and they are more and more willing to invest and contribute to education. So, when the subjective conditions are so good, why are the results of education not all so good and there are big differences? This requires us to explore the impact and reasons from an objective perspective. Furthermore, there are certain phenomena in our society that have attracted our attention. The first is that the setting of classes is tending to the smaller size, which means there are fewer students in each class than before. The second is that many families have a special trust and preference for a certain school. Although the school is far away from home or the tuition is high, the student still choose to study there instead of those close to home whose tuition is more affordable. From these perspectives, I made this project to study the class factors and school factors which have a direct impact on students and students’ scores which is a simple but direct indicator to the quality of education.
+
+## Questions of interest
+
+In this project, I focus on the impact class indicator and the school indicator put on students' scores. In the data set we searched, there are so many observations and variables,here, I only examine students' math scores who are in the 1st grade. I am mainly interested in and want to explore questions in two aspects. The first question is whether there is any difference in math scores in 1st grade across class types and schools. If so, then, the second question is which class type or school is associated with the highest math scores in 1st grade.
+
+
+## Potential impact of results
+
+I believe that the results of this project will have positive effects on all aspects of society, especially the education field. First of all, these results are the responses to current social phenomena. They analyze the internal causes of these phenomena, which will enable parents and students to better understand the truth. Then, these results will provide some new ideas for students who are about to pursue a higher education, so that they can choose the most beneficial plan based on the results. Finally, these results can provide some reference suggestions for education experts and education departments. In the subsequent policy adjustment and reform process, relevant changes can be made according to the results of this project to improve the education industry and improve the quality of teaching.
+ 
+# Background 
+
+In this project, I explore the data from a very influential randomized experiment. The Tennesses Student/Teacher Achievement Ratio study (a.k.a. Project STAR) was conducted in the late 1980s to evaluate the effect of class sizes on test scores.The study randomly assigned students to small classes, regular classes, and regular classes with a teacher’s aide. Classroom teachers were also randomly assigned to the classes they would teach. The original data set of this project was downloaded from the [Harvard dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=hdl:1902.1/10766). 
+
+In this original data set, there are more than 10,000 sets of observations and 379 different variables. Each observation represents various information of each student, which is very large and complex. Therefore, I only select the math scores, class type, and school id of the first-year students to be studied to form a new data set. This new data set still contains more than 6000 sets of observations, which is the personal situation of more than 6000 students. In order to better study the impact of classes and schools on student performance, I introduce a new variable, teacher id, and divided the students into 339 different classes based on this variable. The follow-up study will base on each class information as a set of observation to better explore at the class and school level, without too much personal information. In order to better explore the general situation of society, I average the math scores of each class and use this average math score as the main object of subsequent research. 
+
+At this point, a new data set that the follow-up research relies on has been formed. After removing all NA values, this data set contains a total of three variables and 339 groups of observations. The first variable is scaled math score, which is a numerical variable representing the average math scores of the students in each class in the 1st grade. And the average math scores of all the students in the first-grade class are the population in this research. The second variable is class type, which is a factor variable representing different class size, where 1 represents small class (13 to 17 students per teacher), 2 represents regular class (22 to 25 students per teacher) and 3 represents regular-with-aide class (22 to 25 students with a full-time teacher's aide). The last variable is school id, which is a factor variable representing different school. There are 76 levels in this school id variable.
+
+In fact, there have been a lot of related studies using this data set, and their conclusions can give me a lot of inspiration. For example, Achilles's (2012) study found "The STAR research shows that small classes (15-17 pupils) in kindergarten through third grade
+(K-3) provide short- and long-term benefits for students, teachers, and society at large"(paras.2). Achilles and Finn's (2002) study found "Research shows the necessity of 3(preferably 4) years of small-class "treatment." Teacher aides (paid/full or part-time) added no consistent benefit"(paras.5).
+
+# Descriptive analysis
+
+```{r,include=FALSE}
+library(haven)
+library(gplots)
+library(ggplot2)
+stardata<-read_sav("STAR_Students.sav")
+star<-data.frame(schoolid=stardata$g1schid,teacherid=stardata$g1tchid,classtype=stardata$g1classtype,math=stardata$g1tmathss)
+star<-na.omit(star)
+mathscale<-aggregate(star$math,by=list(star$teacherid),mean)
+mathscale<-data.frame(teacherid=mathscale$Group.1, scale=mathscale$x)
+
+newdata<-merge(star, mathscale, by="teacherid", all = T)
+newdata<-newdata[,-4]
+newdata<-newdata[!duplicated(newdata), ]
+newdata$classtype<-as.factor(newdata$classtype)
+newdata$schoolid<-as.factor(newdata$schoolid)
+```
+
+This project mainly involves three variables. The main relationship is that different class types and schools may have large differences in the average math scores of 1st-grade students. In order to study this difference, we first conduct some simple descriptive research. First of all, for different class types, I use the three class types as the classification basis, and calculate the main object of this study-the average math score of the classes, and then obtain the following relevant descriptive statistics. Firstly, according to the following table we know that the number of different types of classes is not very balanced, regular-size classes are the most, little more than regular-with-aide classes. Small classes are the least. Among different class types, although the maximum average math scores of the three types of classes are the same and standard deviation are similar, for the minimum, average, and median, small classes have a obvious lead. For example, in the first row, we can see that the minimum score of the small class is about 20 points higher than the other two classes.
+
+This table is sufficient to initially show a pattern or a social phenomenon, that is, the teaching results of small classes are significantly better than regular classes and regular-with-aide classes, but the number of small classes is the least, and it has not been vigorously developed.
+
+Similarly, we can get a table of average math scores divided by different schools. It shows that the values of the descriptive statistics are not exactly same between different schools, there are some fluctuations. It can be roughly understood as when other conditions are the same, there will be certain differences in the quality of teaching between different schools.
+
+```{r,echo=FALSE}
+#descriptive table
+N<-table(star$classtype)
+MIN<-tapply(star$math,star$classtype,min)
+MAX<-tapply(star$math,star$classtype,max)
+MEAN<-tapply(star$math,star$classtype,mean)
+MEDIAN<-tapply(star$math,star$classtype,median)
+SD<-tapply(star$math,star$classtype,sd)
+A<-rbind(MIN,MAX,MEAN,MEDIAN,SD)
+colnames(A)<-c("classtype=1,n=1867","classtype=2,n=2507","classtype=3,n=2224")
+A
+```
+
+In order to get the above conclusions more intuitively, I make the following two box plots. From the figure on the left, we can see that the indicators of the small class are the best. In the regular class, aides can slightly help to get better results. It can be seen from the figure on the right that although the range between schools is large, the mean math score of each school is sightly close the others. There are some differences for sure but not very much. There is no particular school that stands out.
+
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+#descriptive plots
+
+ggplot(data=newdata)+
+   geom_boxplot(mapping=aes(x=classtype, y=scale))#classtype
+
+ggplot(data=newdata)+
+   geom_boxplot(mapping=aes(x=schoolid, y=scale))#schoolid
+```
+ 
+
+# Inferential analysis 
+
+Next, I proceed to a deeper stage of modeling exploration and interpretation. Firstly, I define a full two-way ANOVA model(with interaction terms) as follows 
+$Y_{ijk} = \mu_{..} + \alpha_{i} + \beta_{j} + (\alpha\beta)_{ij}+\epsilon_{ijk}$ and a reduced two-way ANOVA model(without interaction terms) as follows $Y_{ijk} = \mu_{..} + \alpha_{i} + \beta_{j}+\epsilon_{ijk}$, where  $\epsilon_{ijk}$  are i.i.d.  𝑁(0,𝜎2). The outcome $Y_{ijk}$ represents the ith class type and the jth school in the kth teacher's class. The index $i$ represents the class type: small ($i=1$), regular ($i=2$), regular with aide ($i=3$), the index $j$ represents the school indicator,$j=1,2...76$, the index $k$ represents the order of the observation, $k=1,2...339$. Then, the parameter $\mu_{..}$ represents the mean of the population's average math score called cell mean, the parameter $\alpha$ represents the impact different classes type put on the each average math score, the parameter $\beta$ represents the impact different schools put on the each average math score, the parameter $\alpha\beta$ represents the interactive impact both class type and school put on the each average math score, and the parameter $\epsilon$ represents the error terms. A quick count shows that there are $3$ $\alpha$s, $76$ $\beta$s, $228$ interaction terms, one $\mu$ and one $\sigma$ in the factor effect form, which amount to $228+3+76+2$ parameters for a full model and $3+76+2$ parameters for a reduced model.
+
+Indeed, a set of constraints are in placed with the factor effect form. First of all, $\sum_{i=1}^3\alpha_i   = \sum_{j=1}^{76} \beta_j=0$, it means that the sum of the influence of class type on the fluctuation of students' average math score is zero. Similarly, the sum of the influence of school on the fluctuation of students' average math score is also zero. Secondly, if it is a model with interaction terms, $\sum_{i=1}^3 (\alpha\beta)_{ij}  =\sum_{j=1}^{76} (\alpha\beta)_{ij} =0$, it means that the sum of the influence of class type on the interctive fluctuation of students' average math score is zero. The sum of the influence of school on the interactive fluctuation of students' average math score is also zero.
+
+In addition, there are some assumptions for the two-way ANOVA model. Firstly, the data points are relevant with respect to the scientific question under investigation. In this case, it means that the each class's information as an observation need to be relevant to the questions of interest. Secondly, the mean of the response variable is influenced additively (if not interaction term) and linearly by the factors, it means that in the reduced model, the average math score is additively and linearly influenced by the class type factor and the school factor, it equals the population mean plus the factor impact individually. Thirdly, the errors are independent, it means that the impact of random disturbance terms other than controlled class type and school factors are independent of each other. Then, the errors have the same variance, in this case, the random disturbance terms have equal variance, same fluctuation range. In other words, the impact of random disturbance terms are equal to each observation. Lastly, the errors are normally distributed, with 0 mean and $\sigma^{2}$ variance.
+
+After understanding the basic knowledge, I need to fit the two models and decide which model is the best. The results of the fitting are as follows. It is worth emphasizing that the null hypothesis of F test is under the significance level, $\alpha_i=\beta_j=0$ for reduced model and $\alpha_i=\beta_j=(\alpha\beta)_{ij}=0$ for the ful model. The first table is for the reduced two-way ANOVA model. According to it, we can get that the p-values of F test for two factors are far less than 0.05, then we can reject the null hypothesis and get the conclusion that there are associations between average math score and class type and school at the significance level 0.05. According to the second table for full two-way ANOVA model with interaction terms, we can get that the p-values of F test for two factors are far less than 0.05, but the p-value for the interactive term is 0,706, larger than 0.05. So we can get the conclusion that there are associations between average math score and class type and school at the significance level 0.05, but there is no association between average math score and two factors' interactive impact. At this point, I think the reduced model is sufficient and efficient, so the two-way ANOVA model is the better choice. 
+
+```{r,echo=FALSE}
+#two-way anova
+anova.fit<-aov(scale~classtype+schoolid,data=newdata)
+summary(anova.fit)
+#two-way anova with interaction
+anova.fit1<-aov(scale~classtype*schoolid,data=newdata)
+summary(anova.fit1)
+```
+
+In order to get further verification, I use a different method, and the results are as follows. Here I select according to the AIC principle that the reduced  model is better with lowest AIC score.
+
+```{r,echo=FALSE}
+#best-fit
+library(AICcmodavg)
+model.set <- list(anova.fit, anova.fit1)
+model.names <- c("anova.fit", "interaction")
+aictab(model.set, modnames = model.names)
+```
+
+Based on the above analysis, we can conclude that the two-way ANOVA model is our best model, and subsequent research will be based on this model. And, we can get a conclusion based on this model now, there are indeed differences in math scores in 1st grade across class types and schools, which is also an effective answer to the first question of this project. 
+
+Next, we will discuss the second question. Here, I choose Tukey-test to look at the confidence intervals of the same factor at different levels( the level with maximum math score and one another level), and determine whether there is a significant difference between the two levels based on checking whether the confidence interval contains 0. The results are as follows. For class type factor, as we know before, small class(class type=1) has the highest score. According to Tukey-test, both 1-2(small class-regular class) and 1-3(small class-regular class with aide) do not contain 0 in the confidence interval. So, we can get the conclusion that small class is associated with the highest math scores in 1st grade. For school indicator, it is complex because there are so many levels to compare with. So I just choose the level(school id=216537) with th highest score and the level(school id=168214) with the second highest score and compare them with each other. If the confidence interval does not contain 0, then there is significant difference between this two level and we can regard that there are significant differences between the level 216537 and all other levels, vise versa. According to the second result following, we find that 0 is contained in the confidence interval. There is no obvious difference between the highest level and the second highest, so we get the conclusion that there is no specific school level associated with the highest math scores in 1st grade. What's more, in order to get conclusions more intuitively, we can refer to the following two figures. So far, we have answered the second question of interest for this project. We notice that the conclusion got from this part is the certification to the descriptive analysis.
+
+```{r,echo=FALSE}
+#tukey test
+tukey.test <- TukeyHSD(anova.fit,conf.level=0.95)
+TukeyHSD(anova.fit,conf.level=0.95,which=1)#classtype
+```
+```{r,include=FALSE}
+which.max(newdata$scale)
+newdata$schoolid[which.max(newdata$scale)]
+second<-newdata[-179,]
+newdata$schoolid[which.max(second$scale)]
+```
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+(contrast<-tukey.test$schoolid['216537-168214',])#schoolid
+plot(tukey.test, las=1 , col="brown")
+```
+
+# Sensitivity analysis 
+
+In this part, I will diagnose the selected two-way ANOVA model and research the assumptions of the model. The diagnosis plots are as follows. The "Residuals vs Fitted" plot shows no obvious pattern, it satisfies the linearity assumption and the errors are independent with each other, it means that the model is adequate. In the Normal Q-Q plot, residuals distribute with heavy tails and the points do not roughly fall on a straight line, so there appears to non-normality problems.  
+
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+plot(anova.fit,which=c(1,2))
+```
+
+In addition, we check the equal variance assumption particularly. Because there are non-normality problems, Levene-test is more suitable than F-test in this case. The null hypothesis of this test is the variance across groups are  homogeneous. We can find i the following table that the p-value  for school id is far less than the confidence level 0.05, and the p-value for class type is slightly higher than 0.05, but it is very close to 0.05. So here, we can reject the null hypothesis under the 0.05 confidence level and concluded that the errors do not have the same variance. However, when we set the confidence level as 0.03 or lower than 0.03, then we do not need to reject the null hypothesis,and the conclusion is that the errors have the equal variance. In a word, there are some problems in the homogeneity of the variance across groups but not serious.
+
+```{r,echo=FALSE}
+#equal variance-Levene test
+newdata$res.abs=abs(anova.fit$residuals);
+summary(aov(res.abs~classtype+schoolid,data=newdata))
+```
+
+# Supplemental analysis
+
+After analyzing the above results using the average math score as the target variable, I imagine that whether there are different results if I use other summary statistics instead of the mean. So in this part, I use the median of the class math score as a representative of the math performance of a class. The median of the math score is used as the target variable for following relevant analysis. 
+
+```{r,include=FALSE}
+#Data organization
+library(haven)
+stardata<-read_sav("STAR_Students.sav")
+star<-data.frame(schoolid=stardata$g1schid,teacherid=stardata$g1tchid,classtype=stardata$g1classtype,math=stardata$g1tmathss)
+star<-na.omit(star)
+mathscale1<-aggregate(star$math,by=list(star$teacherid),median)
+mathscale1<-data.frame(teacherid=mathscale1$Group.1, scale=mathscale1$x)
+newdata1<-merge(star, mathscale1, by="teacherid", all = T)
+newdata1<-newdata1[,-4]
+newdata1<-newdata1[!duplicated(newdata1), ]
+newdata1$classtype<-as.factor(newdata1$classtype)
+newdata1$schoolid<-as.factor(newdata1$schoolid)
+```
+
+According to following two figures, we can we simple descriptive analysis and get the similar conclusion as the former analysis with mean as summary statistics. The  teaching results of small classes are significantly better than regular classes and regular-with-aide classes. When other conditions are the same, there will be differences in the quality of teaching between different schools but it is hard to find which one is the best strictly.
+
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+#Descriptive analysis
+ggplot(data=newdata1)+
+   geom_boxplot(mapping=aes(x=classtype, y=scale))#classtype
+
+ggplot(data=newdata1)+
+   geom_boxplot(mapping=aes(x=schoolid, y=scale))#schoolid
+```
+
+Here, with the median as the target statistics instead of the mean, we still choose the reduced two-way ANOVA model and reach the conclusion that there are associations between median math score and class type and school at the significance level 0.05, but there is no association between median math score and two factors’ interactive impact. This is the response to the first question of interest in this project.
+
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+#Inferential analysis
+anova.fit2<-aov(scale~classtype+schoolid,data=newdata1)
+summary(anova.fit2)#two-way anova
+
+anova.fit3<-aov(scale~classtype*schoolid,data=newdata1)
+summary(anova.fit3)#two-way anova with interaction
+
+library(AICcmodavg)
+model.set <- list(anova.fit2, anova.fit3)
+model.names <- c("anova.fit", "interaction")
+aictab(model.set, modnames = model.names)#best-fit
+```
+
+From the following tables and figures, we can directly get the same solution to the second question as the former part. By observing the confidence intervals, we can think small class is associated with the highest math scores in 1st grade for sure. But no specific school level associated with the highest math scores in 1st grade. The result is consistent with the descriptive analysis part.
+
+```{r,echo=FALSE}
+tukey.test1 <- TukeyHSD(anova.fit2,conf.level=0.95)#tukey test
+TukeyHSD(anova.fit2,conf.level=0.95,which=1)#classtype
+```
+
+```{r,include=FALSE}
+which.max(newdata1$scale)
+newdata1$schoolid[which.max(newdata1$scale)]
+second1<-newdata1[-53,]
+newdata1$schoolid[which.max(second1$scale)]
+```
+
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+(contrast<-tukey.test1$schoolid['216537-168214',])#schoolid
+
+plot(tukey.test1, las=1 , col="brown")
+```
+
+It can be seen from the diagnostic plots of the model that this model satisfies the linearity assumption and the errors are independent with each other. However, there are non-normality problems. And problems in the homogeneity of the variance across groups are more severe.
+
+```{r,echo=FALSE,fig.width=4, fig.height=3}
+#Sensitivity analysis
+plot(anova.fit2,which=c(1,2))##diagnose
+newdata1$res.abs=abs(anova.fit2$residuals);
+summary(aov(res.abs~classtype+schoolid,data=newdata1))#equal variance
+```
+
+# Discussion 
+
+This project selects certain summary statistics of the math performance of a 1t-grade class as the main objective of the research, and explores the influence of the class type and the school on it. The research methods mainly include descriptive analysis, preliminary conclusions are obtained through various descriptive statistics of variables; in-depth inferential analysis, a two-way ANOVA model is constructed in this part and various related tests are performed to finally get a conclusion;sensitivity analysis, diagnose the model we get and check assumptions under the model.
+
+The main result of this research is that class type and school do have an impact on students' academic performance, and these two influencing factors are independent of each other and do not have an interactive effect on academic performance. On a deeper level, we can think that small classes are more beneficial to students' scores, but there are no significant differences between different schools in scores.
+
+Based on the above conclusions, we can summarize the existing social phenomena and make some suggestions for the future education industry. First of all, from our research, we can definitely know that the performance of small class students is generally better than that of students in other classes. Therefore, we can suggest that parents and students planning to pursue a higher education should choose small classes as far as possible according to their own conditions. However, it is very worthy of our attention that among the three existing class types, the number of small classes is the smallest, which is not conducive to most students in society to better conduct academic inquiry. Therefore, it is recommended that the education department vigorously develop small class settings in future reforms to better improve the quality of education for all students, which is also very helpful for future social development. Second, according to data analysis, although schools put significant impact on their students, we can see that the quality of education in different schools is actually not much different. There is no need to pursue a particular school, especially in the basic education stage.Third, although students in small classes have generally better results, the maximum scores in various class types are close or even the same. This reminds students that although external conditions do have an impact on their grades, the most important factor is themselves. As long as working hard enough, they can achieve the same excellent results as students in small classes even though in regular classes, or even better.
+ 
+In addition, although the model obtained through the above analysis is sufficient and effective, it is not optimal. There are still non-linear problems and the assumption of homogeneity of variance is still not satisfied. Therefore, more in-depth exploration and improvement should be carried out afterwards, such as transformations of variables to adjust the model relationship.
+
+
+# Acknowledgement {-}
+
+I have discussed this project with my team member: Xiaoyi Xu, Yunhao Yang and Liuyi Bao.
+
+# Reference {-}
+
+Charles M. Achilles. (2012). Class-Size Policy: The Star Experiment and Related Class-Size Studies. Wilmington: National Council of Professors of Educational Administration (NCPEA).
+
+Achilles, C. M.&Finn, J: D. (2002). Making Sense of Continuing and Renewed Class-Size Findings and Interest. San Diego, CA: American Association of School Administrators (AASA).
+
+# Appendix {-}
+
+This is an [appendix](https://github.com/jnwei21/STA207-project1/blob/main/project.Rmd) that contains all the code and results of this project.
+
+This is an [appendix](https://github.com/jnwei21/STA207-project1/blob/main/Jun%20Wei-Project1%20report.Rmd) that contains the rmd file of this report.
+
+# Session info {-}
+
+<span style='color:blue'>
+Report information of your `R` session for reproducibility. 
+</span> 
+
+
+```{r}
+sessionInfo()
+```
